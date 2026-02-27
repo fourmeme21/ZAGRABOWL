@@ -68,12 +68,32 @@ body{background:var(--bg);color:var(--tx);font-family:var(--font);min-height:100
 </head>
 <body>
 
+<!-- ŞİFRE EKRANI -->
+<div id="lockScreen" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:340px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:28px;font-weight:800;color:var(--cr)">ZAHRA <span style="color:var(--or)">BOWL</span></div>
+      <div style="font-size:13px;color:var(--mu);margin-top:6px">Müdür Girişi</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:24px">
+      <div style="font-size:12px;color:var(--mu);margin-bottom:8px;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Şifre</div>
+      <div style="display:flex;background:var(--bg);border:1.5px solid var(--bd);border-radius:12px;overflow:hidden" id="pinBox">
+        <input id="pinInput" type="password" placeholder="••••••••"
+          style="flex:1;background:transparent;border:none;color:var(--cr);font-size:24px;font-weight:700;padding:14px 16px;outline:none;-webkit-appearance:none">
+      </div>
+      <div id="pinErr" style="display:none;color:#f87171;font-size:12px;margin-top:8px">❌ Şifre yanlış, tekrar dene</div>
+      <button onclick="checkPin()" style="width:100%;background:var(--or);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 4px 16px var(--or3)">Giriş Yap</button>
+    </div>
+  </div>
+</div>
+
+<div id="mainContent" style="display:none">
 <div class="header">
   <div>
     <div class="header-brand">ZAHRA <span>BOWL</span></div>
     <div class="header-date" id="dateStr">—</div>
   </div>
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+
 </div>
 
 <div class="wrap">
@@ -379,6 +399,32 @@ function toast(msg, type) {
   wrap.appendChild(el);
   setTimeout(function() { el.remove(); }, 2500);
 }
+</script>
+</div><!-- mainContent -->
+
+<script>
+function checkPin() {
+  var pin = document.getElementById('pinInput').value;
+  if (pin === 'A1s2d3f4') {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    try { sessionStorage.setItem('mudurAuth', '1'); } catch(e) {}
+  } else {
+    document.getElementById('pinErr').style.display = 'block';
+    document.getElementById('pinBox').style.borderColor = '#ef4444';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+try {
+  if (sessionStorage.getItem('mudurAuth') === '1') {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+  }
+} catch(e) {}
+document.getElementById('pinInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkPin();
+});
 </script>
 </body>
 </html>
