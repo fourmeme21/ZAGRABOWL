@@ -374,32 +374,36 @@ var defaultData = {
 var appData = defaultData;
 var period = 'daily';
 
-// 🔥 SHEETDB API LİNKİ - DÜZELTİLDİ
+// SHEETDB API LİNKİ
 var SHEETDB_URL = 'https://sheetdb.io/api/v1/e1gjqprd0b9hu';
 
-// ─── LOAD FROM LOCALSTORAGE (ilk yükleme için) ───
+// ─── LOAD FROM LOCALSTORAGE ───
 try {
   var saved = localStorage.getItem('zahrabowl');
   if (saved) appData = JSON.parse(saved);
 } catch(e) {}
 
-// ─── SHEETDB'DEN VERİ ÇEK ───
+// ─── SHEETDB'DEN VERİ ÇEK (TÜM KAYITLAR) ───
 function fetchLatest() {
   console.log('SheetDB verisi çekiliyor...');
   
-  fetch(SHEETDB_URL)
+  fetch(SHEETDB_URL + '?limit=100')
     .then(function(response) {
       if (!response.ok) {
-        throw new Error('API yanıt vermedi: ' + response.status);
+        throw new Error('API yanıt vermedi');
       }
       return response.json();
     })
     .then(function(data) {
-      console.log('Gelen veri:', data);
+      console.log('Gelen veri sayısı:', data.length);
       
-      // API'den dizi olarak veri geliyor
+      // Tüm verileri localStorage'a kaydet (grafikler için)
+      try { 
+        localStorage.setItem('zahrabowl_all', JSON.stringify(data)); 
+      } catch(e) {}
+      
       if (Array.isArray(data) && data.length > 0) {
-        // En son eklenen kaydı al (sonuncu)
+        // En son eklenen kaydı al
         var lastRow = data[data.length - 1];
         console.log('Son kayıt:', lastRow);
         
@@ -414,10 +418,8 @@ function fetchLatest() {
         appData.durumExpenses = parseFloat(lastRow.durumExpenses) || 0;
         appData.durumWaste = parseFloat(lastRow.durumWaste) || 0;
         
-        // LocalStorage'a kaydet
         try { localStorage.setItem('zahrabowl', JSON.stringify(appData)); } catch(e) {}
         
-        // Ekranı güncelle
         render();
         toast('Veriler güncellendi!', 'ok');
       } else {
@@ -509,7 +511,7 @@ function saveData() {
   btn.textContent = 'Kaydediliyor...';
   document.getElementById('sucMsg').style.display = 'flex';
   
-  // SheetDB'ye POST yap (isteğe bağlı)
+  // SheetDB'ye POST yap
   fetch(SHEETDB_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -610,64 +612,125 @@ function render() {
   document.getElementById('dWaste').textContent     = fmt(appData.totalSales || 0) + ' DH';
   document.getElementById('durumBadge').textContent = period === 'daily' ? 'Günlük' : period === 'weekly' ? 'Haftalık' : 'Aylık';
   
-  // Dürüm grafiği çiz
   if (typeof drawDurumChart === 'function') {
     drawDurumChart(durumPeriod || 'daily');
   }
 }
 
-// ─── DRAW BAR CHART ───
+// ─── DRAW BAR CHART - TAKVİM MANTIĞIYLA ───
 function drawChart(p) {
   var svg = document.getElementById('chartSvg');
   var tip = document.getElementById('chartTooltip');
   if (!svg) return;
 
-  var base = appData.soldPortions || 285;
-  var seed = base;
-  function nextRand() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed; }
-
+  // Tüm kayıtları localStorage'dan al
+  var allData = [];
+  try {
+    var saved = localStorage.getItem('zahrabowl_all');
+    if (saved) allData = JSON.parse(saved);
+  } catch(e) {}
+  
+  // Tarihe göre sırala
+  allData.sort(function(a, b) { 
+    return new Date(a.date) - new Date(b.date); 
+  });
+  
   var bars = [];
   var today = new Date();
   var dayNames = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
   var monthNames = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
   if (p === 'daily') {
-    // Son 7 gün
-    for (var i = 0; i < 7; i++) {
-      var d = new Date(today);
-      d.setDate(today.getDate() - (6 - i));
-      var dn = dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1];
-      nextRand();
-      var isLast = (i === 6);
-      var val = isLast ? base : Math.max(10, base + ((seed % 80) - 40));
-      bars.push({ label: dn, val: val, isNow: isLast, future: false });
-    }
     document.getElementById('chartTitle').textContent = 'Kase Satışı — Son 7 Gün';
-  } else if (p === 'weekly') {
-    // Son 4 hafta
-    for (var i = 3; i >= 0; i--) {
+    
+    var last7Days = [];
+    for (var i = 6; i >= 0; i--) {
       var d = new Date(today);
-      d.setDate(today.getDate() - i * 7);
-      var label = d.getDate() + ' ' + monthNames[d.getMonth()];
-      nextRand();
+      d.setDate(today.getDate() - i);
+      var dateStr = d.toISOString().split('T')[0];
+      var dayName = dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1];
+      
+      var dayData = null;
+      for (var j = 0; j < allData.length; j++) {
+        if (allData[j].date === dateStr) {
+          dayData = allData[j];
+          break;
+        }
+      }
+      
+      var val = dayData ? parseFloat(dayData.soldPortions) || 0 : 0;
       var isLast = (i === 0);
-      var val = isLast ? base * 7 : Math.max(10, base * 7 + ((seed % 300) - 150));
-      bars.push({ label: label, val: val, isNow: isLast, future: false });
+      
+      last7Days.push({
+        label: dayName,
+        val: val,
+        isNow: isLast,
+        date: dateStr
+      });
     }
+    bars = last7Days;
+    
+  } else if (p === 'weekly') {
     document.getElementById('chartTitle').textContent = 'Kase Satışı — Son 4 Hafta';
-  } else {
-    // Son 12 ay
-    for (var i = 11; i >= 0; i--) {
-      var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      var label = monthNames[d.getMonth()];
-      nextRand();
-      var isLast = (i === 0);
-      var val = isLast ? base * 30 : Math.max(100, base * 30 + ((seed % 1500) - 750));
-      bars.push({ label: label, val: val, isNow: isLast, future: false });
+    
+    var weeklyData = [];
+    var currentDate = new Date(today);
+    
+    for (var w = 3; w >= 0; w--) {
+      var weekStart = new Date(currentDate);
+      weekStart.setDate(currentDate.getDate() - (w * 7 + 6));
+      var weekEnd = new Date(currentDate);
+      weekEnd.setDate(currentDate.getDate() - (w * 7));
+      
+      var weekTotal = 0;
+      var weekLabel = weekStart.getDate() + ' ' + monthNames[weekStart.getMonth()];
+      
+      for (var k = 0; k < allData.length; k++) {
+        var itemDate = new Date(allData[k].date + 'T12:00:00');
+        if (itemDate >= weekStart && itemDate <= weekEnd) {
+          weekTotal += parseFloat(allData[k].soldPortions) || 0;
+        }
+      }
+      
+      weeklyData.push({
+        label: weekLabel,
+        val: weekTotal,
+        isNow: (w === 0)
+      });
     }
+    bars = weeklyData;
+    
+  } else {
     document.getElementById('chartTitle').textContent = 'Kase Satışı — Son 12 Ay';
+    
+    var monthlyData = [];
+    var currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    for (var m = 11; m >= 0; m--) {
+      var monthDate = new Date(currentMonth);
+      monthDate.setMonth(currentMonth.getMonth() - m);
+      var monthStr = monthNames[monthDate.getMonth()] + ' ' + monthDate.getFullYear().toString().slice(-2);
+      
+      var monthTotal = 0;
+      
+      for (var n = 0; n < allData.length; n++) {
+        var itemDate = new Date(allData[n].date + 'T12:00:00');
+        if (itemDate.getMonth() === monthDate.getMonth() && 
+            itemDate.getFullYear() === monthDate.getFullYear()) {
+          monthTotal += parseFloat(allData[n].soldPortions) || 0;
+        }
+      }
+      
+      monthlyData.push({
+        label: monthStr,
+        val: monthTotal,
+        isNow: (m === 0)
+      });
+    }
+    bars = monthlyData;
   }
 
+  // GRAFİĞİ ÇİZ
   var W = 320, H = 180;
   var padL = 28, padR = 8, padT = 12, padB = 22;
   var chartW = W - padL - padR;
@@ -700,12 +763,10 @@ function drawChart(p) {
     var barH = Math.max(3, H - padB - barTop);
     var fill = b.isNow ? 'url(#bg1)' : 'url(#bg2)';
     var stroke = b.isNow ? '#F57C00' : 'none';
-    var opacity = b.future ? '0.15' : '1';
-    barSvg += '<rect x="' + (cx - barW/2) + '" y="' + barTop + '" width="' + barW + '" height="' + barH + '" rx="3" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1" opacity="' + opacity + '"/>';
+    barSvg += '<rect x="' + (cx - barW/2) + '" y="' + barTop + '" width="' + barW + '" height="' + barH + '" rx="3" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1"/>';
     if (b.isNow) {
       barSvg += '<text x="' + cx + '" y="' + (barTop - 4) + '" text-anchor="middle" fill="#F57C00" font-size="8" font-family="Inter,system-ui,sans-serif" font-weight="700">' + Math.round(b.val) + '</text>';
     }
-    // X label — aylık için daha küçük font
     var fsize = (p === 'monthly') ? '6.5' : '8.5';
     barSvg += '<text x="' + cx + '" y="' + (H - 5) + '" text-anchor="middle" fill="' + (b.isNow ? '#F57C00' : '#6b7e96') + '" font-size="' + fsize + '" font-family="Inter,system-ui,sans-serif" font-weight="' + (b.isNow ? '700' : '400') + '">' + b.label + '</text>';
   });
