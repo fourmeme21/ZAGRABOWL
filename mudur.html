@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0F1419">
+<title>Zahra Bowl — Müdür Girişi</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F1419;--s1:#141c26;--s2:#1a2535;--bd:#1e2f42;
+  --or:#F57C00;--or2:rgba(245,124,0,.13);--or3:rgba(245,124,0,.35);
+  --cr:#F5EDD6;--tx:#e8dcc8;--mu:#6b7e96;
+  --gn:#22c55e;--am:#f59e0b;--rd:#ef4444;
+  --font: system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+body{background:var(--bg);color:var(--tx);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+
+.header{background:var(--s1);border-bottom:1px solid var(--bd);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header-brand{font-size:18px;font-weight:800;color:var(--cr);letter-spacing:-.02em}
+.header-brand span{color:var(--or)}
+.header-date{font-size:11px;color:var(--mu);margin-top:2px}
+
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 100px}
+
+/* SECTION */
+.section{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:14px}
+.section-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--cr);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--bd)}
+.section-title svg{color:var(--or)}
+
+/* INPUT GROUP */
+.igrp{margin-bottom:14px}
+.igrp:last-child{margin-bottom:0}
+.ilbl{display:block;font-size:12px;font-weight:600;color:var(--mu);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase}
+.irow{display:flex;align-items:center;background:var(--bg);border:1.5px solid var(--bd);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.irow:focus-within{border-color:var(--or)}
+.ifield{flex:1;background:transparent;border:none;color:var(--cr);font-family:var(--font);font-size:24px;font-weight:700;padding:14px 16px;outline:none;-webkit-appearance:none;appearance:none;min-width:0}
+.ifield::placeholder{color:var(--bd);font-weight:400;font-size:20px}
+.iunit{font-size:13px;font-weight:600;color:var(--mu);padding:0 16px 0 0;white-space:nowrap}
+
+/* QUICK BUTTONS */
+.qbtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.qbtn{background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--mu);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.qbtn:active{background:var(--or2);border-color:var(--or);color:var(--or)}
+
+/* SAVE BUTTON */
+.savebtn{position:fixed;bottom:0;left:0;right:0;padding:16px 20px;background:var(--bg);border-top:1px solid var(--bd)}
+.savebtn button{width:100%;max-width:480px;margin:0 auto;display:block;background:var(--or);color:#fff;border:none;border-radius:14px;padding:18px;font-family:var(--font);font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px var(--or3);transition:all .2s;letter-spacing:.02em;-webkit-tap-highlight-color:transparent}
+.savebtn button:active{background:#d96e00;transform:scale(.98)}
+.savebtn button:disabled{opacity:.5}
+
+/* SUCCESS */
+.sucbox{display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:12px;color:#4ade80;font-size:14px;font-weight:600;margin-bottom:14px}
+
+/* SUMMARY ROW */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)}
+.sbox{background:var(--bg);border-radius:10px;padding:12px}
+.slbl{font-size:10px;color:var(--mu);letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
+.sval{font-size:20px;font-weight:800;line-height:1}
+
+/* TOAST */
+#toastWrap{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--s2);border:1px solid var(--bd);color:var(--cr);padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;animation:sup .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:nowrap}
+.toast.ok{border-color:rgba(34,197,94,.4);color:#4ade80}
+.toast.err{border-color:rgba(239,68,68,.4);color:#f87171}
+@keyframes sup{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-brand">ZAHRA <span>BOWL</span></div>
+    <div class="header-date" id="dateStr">—</div>
+  </div>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+</div>
+
+<div class="wrap">
+
+  <div id="sucMsg" class="sucbox" style="display:none">
+    ✅ Veriler başarıyla kaydedildi!
+  </div>
+
+  <!-- KASE -->
+  <div class="section">
+    <div class="section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+      Kase Satışları
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Günlük Ciro</div>
+      <div class="irow">
+        <input class="ifield" id="fRevenue" type="number" inputmode="decimal" placeholder="0" oninput="calcLive()">
+        <span class="iunit">DH</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fRevenue',1000)">+1K</button>
+        <button class="qbtn" onclick="addVal('fRevenue',2000)">+2K</button>
+        <button class="qbtn" onclick="addVal('fRevenue',5000)">+5K</button>
+        <button class="qbtn" onclick="setVal('fRevenue',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Satılan Kase</div>
+      <div class="irow">
+        <input class="ifield" id="fBowls" type="number" inputmode="numeric" placeholder="0" oninput="calcLive()">
+        <span class="iunit">Adet</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fBowls',10)">+10</button>
+        <button class="qbtn" onclick="addVal('fBowls',25)">+25</button>
+        <button class="qbtn" onclick="addVal('fBowls',50)">+50</button>
+        <button class="qbtn" onclick="setVal('fBowls',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Toplam Gider</div>
+      <div class="irow">
+        <input class="ifield" id="fExpenses" type="number" inputmode="decimal" placeholder="0" oninput="calcLive()">
+        <span class="iunit">DH</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fExpenses',500)">+500</button>
+        <button class="qbtn" onclick="addVal('fExpenses',1000)">+1K</button>
+        <button class="qbtn" onclick="addVal('fExpenses',2000)">+2K</button>
+        <button class="qbtn" onclick="setVal('fExpenses',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Atık (Kase)</div>
+      <div class="irow">
+        <input class="ifield" id="fWaste" type="number" inputmode="numeric" placeholder="0" oninput="calcLive()">
+        <span class="iunit">Adet</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fWaste',1)">+1</button>
+        <button class="qbtn" onclick="addVal('fWaste',5)">+5</button>
+        <button class="qbtn" onclick="addVal('fWaste',10)">+10</button>
+        <button class="qbtn" onclick="setVal('fWaste',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="sbox">
+        <div class="slbl">Net Kâr</div>
+        <div class="sval" id="liveProfit" style="color:var(--or)">0 DH</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:3px" id="liveProfitPct">%0 marj</div>
+      </div>
+      <div class="sbox">
+        <div class="slbl">Atık Oranı</div>
+        <div class="sval" id="liveWaste" style="color:var(--gn)">%0</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:3px" id="liveWasteSub">0 kase</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DÜRÜM -->
+  <div class="section">
+    <div class="section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+      Dürüm Satışları
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Dürüm Cirosu</div>
+      <div class="irow">
+        <input class="ifield" id="fDurumRevenue" type="number" inputmode="decimal" placeholder="0" oninput="calcLive()">
+        <span class="iunit">DH</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fDurumRevenue',500)">+500</button>
+        <button class="qbtn" onclick="addVal('fDurumRevenue',1000)">+1K</button>
+        <button class="qbtn" onclick="addVal('fDurumRevenue',2000)">+2K</button>
+        <button class="qbtn" onclick="setVal('fDurumRevenue',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Satılan Dürüm</div>
+      <div class="irow">
+        <input class="ifield" id="fDurumCount" type="number" inputmode="numeric" placeholder="0" oninput="calcLive()">
+        <span class="iunit">Adet</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fDurumCount',5)">+5</button>
+        <button class="qbtn" onclick="addVal('fDurumCount',10)">+10</button>
+        <button class="qbtn" onclick="addVal('fDurumCount',25)">+25</button>
+        <button class="qbtn" onclick="setVal('fDurumCount',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Dürüm Gideri</div>
+      <div class="irow">
+        <input class="ifield" id="fDurumExpenses" type="number" inputmode="decimal" placeholder="0" oninput="calcLive()">
+        <span class="iunit">DH</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fDurumExpenses',200)">+200</button>
+        <button class="qbtn" onclick="addVal('fDurumExpenses',500)">+500</button>
+        <button class="qbtn" onclick="addVal('fDurumExpenses',1000)">+1K</button>
+        <button class="qbtn" onclick="setVal('fDurumExpenses',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="igrp">
+      <div class="ilbl">Dürüm Atığı</div>
+      <div class="irow">
+        <input class="ifield" id="fDurumWaste" type="number" inputmode="numeric" placeholder="0" oninput="calcLive()">
+        <span class="iunit">Adet</span>
+      </div>
+      <div class="qbtns">
+        <button class="qbtn" onclick="addVal('fDurumWaste',1)">+1</button>
+        <button class="qbtn" onclick="addVal('fDurumWaste',3)">+3</button>
+        <button class="qbtn" onclick="addVal('fDurumWaste',5)">+5</button>
+        <button class="qbtn" onclick="setVal('fDurumWaste',0)">Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="sbox">
+        <div class="slbl">Dürüm Kârı</div>
+        <div class="sval" id="liveDurumProfit" style="color:var(--or)">0 DH</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:3px" id="liveDurumPct">%0 marj</div>
+      </div>
+      <div class="sbox">
+        <div class="slbl">Ort. Fiyat</div>
+        <div class="sval" id="liveDurumAvg" style="color:var(--cr)">0 DH</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:3px">Dürüm başına</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="savebtn">
+  <button id="saveBtn" onclick="saveData()">💾 Kaydet</button>
+</div>
+
+<div id="toastWrap"></div>
+
+<script>
+// ─── INIT ───
+var appData = {
+  date: new Date().toISOString().split('T')[0],
+  totalSales:0, expenses:0, soldPortions:0, suppliedPortions:0,
+  durumRevenue:0, durumCount:0, durumExpenses:0, durumWaste:0
+};
+
+try {
+  var saved = localStorage.getItem('zahrabowl');
+  if (saved) appData = JSON.parse(saved);
+} catch(e) {}
+
+// Tarih
+document.getElementById('dateStr').textContent =
+  new Date().toLocaleDateString('tr-TR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+// Formu doldur
+document.getElementById('fRevenue').value      = appData.totalSales || '';
+document.getElementById('fBowls').value        = appData.soldPortions || '';
+document.getElementById('fExpenses').value     = appData.expenses || '';
+document.getElementById('fWaste').value        = appData.suppliedPortions > 0 ? (appData.suppliedPortions - appData.soldPortions) : '';
+document.getElementById('fDurumRevenue').value = appData.durumRevenue || '';
+document.getElementById('fDurumCount').value   = appData.durumCount || '';
+document.getElementById('fDurumExpenses').value= appData.durumExpenses || '';
+document.getElementById('fDurumWaste').value   = appData.durumWaste || '';
+calcLive();
+
+// ─── QUICK BUTTONS ───
+function addVal(id, n) {
+  var el = document.getElementById(id);
+  el.value = (parseFloat(el.value) || 0) + n;
+  calcLive();
+}
+function setVal(id, n) {
+  document.getElementById(id).value = n;
+  calcLive();
+}
+
+// ─── LIVE CALC ───
+function calcLive() {
+  var rev  = parseFloat(document.getElementById('fRevenue').value)  || 0;
+  var bwls = parseFloat(document.getElementById('fBowls').value)    || 0;
+  var exp  = parseFloat(document.getElementById('fExpenses').value) || 0;
+  var wst  = parseFloat(document.getElementById('fWaste').value)    || 0;
+  var sup  = bwls + wst;
+  var profit = rev - exp;
+  var pPct   = rev > 0 ? (profit / rev * 100) : 0;
+  var wPct   = sup > 0 ? (wst / sup * 100) : 0;
+
+  var pEl = document.getElementById('liveProfit');
+  pEl.textContent = fmt(profit) + ' DH';
+  pEl.style.color = profit >= 0 ? 'var(--or)' : 'var(--rd)';
+  document.getElementById('liveProfitPct').textContent = '%' + pPct.toFixed(1) + ' marj';
+
+  var wEl = document.getElementById('liveWaste');
+  wEl.textContent = '%' + wPct.toFixed(1);
+  wEl.style.color = wPct <= 5 ? 'var(--gn)' : wPct <= 10 ? 'var(--am)' : 'var(--rd)';
+  document.getElementById('liveWasteSub').textContent = wst + ' kase';
+
+  // Dürüm
+  var dRev = parseFloat(document.getElementById('fDurumRevenue').value)  || 0;
+  var dCnt = parseFloat(document.getElementById('fDurumCount').value)    || 0;
+  var dExp = parseFloat(document.getElementById('fDurumExpenses').value) || 0;
+  var dProfit = dRev - dExp;
+  var dPPct   = dRev > 0 ? (dProfit / dRev * 100) : 0;
+  var dAvg    = dCnt > 0 ? (dRev / dCnt) : 0;
+
+  var dpEl = document.getElementById('liveDurumProfit');
+  dpEl.textContent = fmt(dProfit) + ' DH';
+  dpEl.style.color = dProfit >= 0 ? 'var(--or)' : 'var(--rd)';
+  document.getElementById('liveDurumPct').textContent = '%' + dPPct.toFixed(1) + ' marj';
+  document.getElementById('liveDurumAvg').textContent = fmt(dAvg) + ' DH';
+}
+
+function fmt(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1) + 'K';
+  return Math.round(n);
+}
+
+var SHEETDB = 'https://sheetdb.io/api/v1/e1gjqprd0b9hu';
+
+// ─── SAVE ───
+function saveData() {
+  var btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Kaydediliyor...';
+
+  var data = {
+    date:             new Date().toISOString().split('T')[0],
+    totalSales:       parseFloat(document.getElementById('fRevenue').value)       || 0,
+    expenses:         parseFloat(document.getElementById('fExpenses').value)      || 0,
+    soldPortions:     parseFloat(document.getElementById('fBowls').value)         || 0,
+    suppliedPortions: (parseFloat(document.getElementById('fBowls').value) || 0) + (parseFloat(document.getElementById('fWaste').value) || 0),
+    durumRevenue:     parseFloat(document.getElementById('fDurumRevenue').value)  || 0,
+    durumCount:       parseFloat(document.getElementById('fDurumCount').value)    || 0,
+    durumExpenses:    parseFloat(document.getElementById('fDurumExpenses').value) || 0,
+    durumWaste:       parseFloat(document.getElementById('fDurumWaste').value)    || 0
+  };
+
+  // localStorage'a da kaydet
+  try { localStorage.setItem('zahrabowl', JSON.stringify(data)); } catch(e) {}
+
+  // SheetDB'ye gönder
+  fetch(SHEETDB, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({data: data})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function() {
+    btn.disabled = false;
+    btn.textContent = '💾 Kaydet';
+    var msg = document.getElementById('sucMsg');
+    msg.style.display = 'flex';
+    msg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('Veriler kaydedildi!', 'ok');
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = '💾 Kaydet';
+    toast('Bağlantı hatası! Tekrar dene.', 'err');
+  });
+}
+
+// ─── TOAST ───
+function toast(msg, type) {
+  var wrap = document.getElementById('toastWrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(function() { el.remove(); }, 2500);
+}
+</script>
+</body>
+</html>
