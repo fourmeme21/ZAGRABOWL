@@ -389,7 +389,7 @@ try {
 
 // ─── SHEETDB'DEN VERİ ÇEK ───
 function fetchLatest() {
-  fetch(SHEETDB + '?limit=1&sort_by=date&sort_order=desc')
+  fetch(SHEETDB + '?limit=1&sort_by=date&sort_order=desc&t=' + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(rows) {
       if (rows && rows.length > 0) {
@@ -415,7 +415,23 @@ fetchLatest();
 setInterval(fetchLatest, 30000);
 
 // ─── SAVE ───
-function persist() {
+function persist() fetch(SHEETDB, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      data: [{
+        date: new Date().toLocaleDateString('tr-TR'),
+        ciro: appData.ciro,
+        kase: appData.kase,
+        gider: appData.gider,
+        atik: appData.atik,
+        d_ciro: appData.d_ciro,
+        d_kase: appData.d_kase,
+        d_gider: appData.d_gider,
+        d_atik: appData.d_atik
+      }]
+    })
+  }).then(function() { toast('Google Tabloya Gönderildi!', 'ok'); });{
   try { localStorage.setItem('zahrabowl', JSON.stringify(appData)); } catch(e) {}
 }
 
@@ -438,6 +454,7 @@ function showDash() {
   document.getElementById('dashView').style.display = 'block';
   document.getElementById('formView').style.display = 'none';
   render();
+  fetchLatest();;
 }
 
 // ─── LIVE CALC IN FORM ───
